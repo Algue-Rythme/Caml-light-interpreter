@@ -34,7 +34,7 @@ end
     2) "a" and "b", or "left" and "right" are name for propFormula
 *)
 
-let evalpropFormula valuation prop =
+let evalPropFormula valuation prop =
   (* eval benefits of ocaml lazy evaluation of conditions*)
   let rec eval = function
     | Const(x) -> Valuation.request valuation x (* Deal with negative x *)
