@@ -24,7 +24,7 @@ main:
     propFormula EOL     { $1 }
 ;
 propFormula:
-    | INT                                   {         Const($1)    }
+    | INT                                   {       Literal($1)    }
     | LPARENT propFormula RPARENT           {               $2     }
     | propFormula AND propFormula           {           And($1,$3) }
     | propFormula OR propFormula            {            Or($1,$3) }
