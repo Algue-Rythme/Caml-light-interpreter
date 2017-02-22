@@ -70,3 +70,20 @@ let rec printPropFormula expr =
   | Implies(a, b) -> print_string "Implies"; binOp a b
   | Equivalent(a, b) -> print_string "Equivalent"; binOp a b
 ;;
+
+(* returns a ordered list of literals (all positives) *)
+let rec literalsList = function
+  | Const(_) -> []
+  | Literal(i) -> if i>=0 then [i] else [-i]
+  | Not(a) -> literalsList a
+  | And(a, b) ->
+     List.merge (fun a b -> a-b) (literalsList a) (literalsList b)
+  | Or(a, b) ->
+     List.merge (fun a b -> a-b) (literalsList a) (literalsList b)
+  | Xor(a, b) ->
+     List.merge (fun a b -> a-b) (literalsList a) (literalsList b)
+  | Implies(a, b) ->
+     List.merge (fun a b -> a-b) (literalsList a) (literalsList b)
+  | Equivalent(a, b) ->
+     List.merge (fun a b -> a-b) (literalsList a) (literalsList b);;
+  
