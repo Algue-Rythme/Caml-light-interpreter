@@ -15,4 +15,6 @@ rule token = parse
     | '('                   {   LPARENT                 }
     | ')'                   {   RPARENT                 }
     | '-'?['0'-'9']+ as s   {   INT (int_of_string s)   }
+    | "True"                {   TRUE                    }
+    | "False"               {   FALSE                   }
     | eof                   {   raise Eof               }

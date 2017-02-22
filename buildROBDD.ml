@@ -1,3 +1,5 @@
+open Expr;;
+
 type literal = Var of int;;
 type robdd = LeafFalse | LeafTrue | Node of literal * robdd * robdd;;
 
@@ -14,8 +16,8 @@ let buildROBDD f =
     if low = high then low (* redundant test *)
     else if MapROBDD.mem tbl prenode then MapROBDD.find tbl prenode (* sharing *)
     else (
-        let node = Node(var, low, high) in
-        MapROBDD.add tbl prenode node; node
+      let node = Node(var, low, high) (* create new node *)
+      in MapROBDD.add tbl prenode node; node
     )
   in
   let rec build formula i =
@@ -25,4 +27,4 @@ let buildROBDD f =
       let v1 = build (replace formula i true) in
       mk i v0 v1
     )
-  in build f 1;; 
+  in build f 1;;

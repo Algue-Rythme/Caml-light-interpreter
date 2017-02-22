@@ -1,7 +1,8 @@
 (* by convention always write code about operators sorted by priority *)
 
 type propFormula =
-    Literal of int
+    Const of bool
+  | Literal of int
   | Not of propFormula
   | And of propFormula * propFormula
   | Or of propFormula * propFormula
@@ -9,45 +10,46 @@ type propFormula =
   | Implies of propFormula * propFormula
   | Equivalent of propFormula * propFormula;;
 
-(* A module to represent and update valuation *)
-
-(* TODO : modify implementation of this and factorise *)
-exception UnknownVariable;;
-module Valuation =
-struct
-  type valuation = bool array ref
-  let create affectation = ref affectation
-  let request valuation x =
-    let sign = x > 0 in
-    let y = if x > 0 then x else -x in
-    if (y = 0 || y > Array.length (!valuation))
-    then raise UnknownVariable
-    else if sign then (!valuation).(y-1) else not (!valuation).(y-1)
-  let set valuation x v =
-    let sign = x > 0 in
-    let y = if x > 0 then x else -x in
-    if (y = 0 || y > Array.length (!valuation))
-    then raise UnknownVariable
-    else (!valuation).(y) = if sign then v else not v
-end
-
 (*
   Convention :
     1) x is always a name for variable
-    2) "a" and "b", or "left" and "right" are name for propFormula
+    2) c is always a name for a constant
+    3) "a" and "b", or "left" and "right" are name for propFormula
 *)
 
-let evalPropFormula valuation prop =
-  (* eval benefits of ocaml lazy evaluation of conditions*)
-  let rec eval = function
-    | Literal(x) -> Valuation.request valuation x (* Deal with negative x *)
-    | Not(a) -> eval a
-    | And(a, b) -> (eval a) && (eval b)
-    | Or(a, b) -> (eval a) || (eval b)
-    | Xor(a, b) -> if (eval a) then not (eval b) else eval b
-    | Implies(a, b) -> if (eval a) then (eval b) else true
-    | Equivalent(a, b) -> (eval a) = (eval b)
-  in eval prop;;
+(* Replace the literal i and -i by value in formula *)
+let replace formula i value =
+  let rec aux = function
+    | Const(c) -> Const(c)
+    | Literal(x) when x = i -> Const(value)
+    | Literal(x) when x = -i -> Const(not value)
+    | Literal(x) -> Literal(x)
+    | Not(a) -> Not(aux a)
+    | And(a, b) -> And(aux a, aux b)
+    | Or(a, b) -> Or(aux a, aux b)
+    | Xor(a, b) -> Xor(aux a, aux b)
+    | Implies(a, b) -> Implies(aux a, aux b)
+    | Equivalent(a, b) -> Equivalent(aux a, aux b)
+  in aux formula;;
+
+(* replace literals in the proposition according to the domain *)
+let replaceLiterals domain prop =
+  let rec aux formula = function
+    | i when i > (Array.length domain) -> formula
+    | i -> replaceLiterals (replace formula i domain.(i)) (i+1);;
+  in aux prop 1;;
+
+(* eval a proposition without literal *)
+exception UnknownVariable of int;;
+let rec eval = function
+  | Const(c) -> c
+  | Literal(x) -> raise (UnknownVariable(abs x))
+  | Not(a) -> eval a
+  | And(a, b) -> (eval a) && (eval b)
+  | Or(a, b) -> (eval a) || (eval b)
+  | Xor(a, b) -> if (eval a) then not (eval b) else eval b
+  | Implies(a, b) -> if (eval a) then (eval b) else true
+  | Equivalent(a, b) -> (eval a) = (eval b);;
 
 let rec printPropFormula expr =
   let binOp left right =
@@ -59,6 +61,7 @@ let rec printPropFormula expr =
       print_string ")";
     end
   in match expr with
+  | Const(c) -> print_string (if c then "True" else "False")
   | Literal(x) -> print_int x
   | Not(a) -> print_string "Not("; printPropFormula a; print_string ")"
   | And(a, b) -> print_string "And"; binOp a b

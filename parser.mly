@@ -2,6 +2,7 @@
     open Expr
 %}
 
+%token TRUE FALSE
 %token <int> INT
 %token EQUIVALENT IMPLIES XOR OR AND NOT
 %token LPARENT RPARENT
@@ -24,6 +25,8 @@ main:
     propFormula EOL     { $1 }
 ;
 propFormula:
+    | TRUE                                  {         Const(true)  }
+    | FALSE                                 {         Const(false) }
     | INT                                   {       Literal($1)    }
     | LPARENT propFormula RPARENT           {               $2     }
     | propFormula AND propFormula           {           And($1,$3) }
