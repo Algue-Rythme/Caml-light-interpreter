@@ -1,5 +1,6 @@
 open Expr
-
+open OBDD_list
+  
 let compile e =
   begin
     printPropFormula e;
