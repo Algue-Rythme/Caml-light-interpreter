@@ -36,7 +36,7 @@ let replace formula i value =
 let replaceLiterals domain prop =
   let rec aux formula = function
     | i when i > (Array.length domain) -> formula
-    | i -> replaceLiterals (replace formula i domain.(i)) (i+1);;
+    | i -> aux (replace formula i domain.(i)) (i+1)
   in aux prop 1;;
 
 (* eval a proposition without literal *)
