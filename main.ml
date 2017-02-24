@@ -1,15 +1,17 @@
-open Expr
-open OBDD_list
+open Expr;;
+open Dict_list;;
+open BuildROBDD;;
+
+module OBDD_List = ROBDD_BUILDER(ROBDD_LIST);;
 
 let name = "/tmp/out"
 let fileDot = String.concat "" [name; ".dot"]
-let compile e =
+
+let compile f =
   begin
-    printPropFormula e;
-    let arbre = OBDD_List.create e in
-    OBDD_List.to_dot arbre fileDot;
-    print_newline();
-    (* print_int (evalPropFormula e); *)
+    printPropFormula f;
+    let tree, nodes = OBDD_List.create f in
+    to_dot nodes fileDot;
     print_newline();
   end
 

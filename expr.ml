@@ -33,11 +33,9 @@ let replace formula i value =
   in aux formula;;
 
 (* replace literals in the proposition according to the domain *)
-let replaceLiterals domain prop =
-  let rec aux formula = function
-    | i when i > (Array.length domain) -> formula
-    | i -> aux (replace formula i domain.(i)) (i+1)
-  in aux prop 1;;
+let rec replaceLiterals formula = function
+  | [] -> formula
+  | (lit, value)::q -> replaceLiterals (replace formula lit value) q;;
 
 (* eval a proposition without literal *)
 exception UnknownVariable of int;;
@@ -50,6 +48,23 @@ let rec eval = function
   | Xor(a, b) -> if (eval a) then not (eval b) else eval b
   | Implies(a, b) -> if (eval a) then (eval b) else true
   | Equivalent(a, b) -> (eval a) = (eval b);;
+
+(* returns a ordered list of literals (all positives) *)
+let rec literalsList = function
+  | Const(_) -> []
+  | Literal(i) -> [abs i]
+  | Not(a) -> literalsList a
+  | And(a, b) ->
+     List.merge (fun a b -> a-b) (literalsList a) (literalsList b)
+  | Or(a, b) ->
+     List.merge (fun a b -> a-b) (literalsList a) (literalsList b)
+  | Xor(a, b) ->
+     List.merge (fun a b -> a-b) (literalsList a) (literalsList b)
+  | Implies(a, b) ->
+     List.merge (fun a b -> a-b) (literalsList a) (literalsList b)
+  | Equivalent(a, b) ->
+    List.merge (fun a b -> a-b) (literalsList a) (literalsList b)
+;;
 
 let rec printPropFormula expr =
   let binOp left right =
@@ -71,19 +86,24 @@ let rec printPropFormula expr =
   | Equivalent(a, b) -> print_string "Equivalent"; binOp a b
 ;;
 
-(* returns a ordered list of literals (all positives) *)
-let rec literalsList = function
-  | Const(_) -> []
-  | Literal(i) -> if i>=0 then [i] else [-i]
-  | Not(a) -> literalsList a
-  | And(a, b) ->
-     List.merge (fun a b -> a-b) (literalsList a) (literalsList b)
-  | Or(a, b) ->
-     List.merge (fun a b -> a-b) (literalsList a) (literalsList b)
-  | Xor(a, b) ->
-     List.merge (fun a b -> a-b) (literalsList a) (literalsList b)
-  | Implies(a, b) ->
-     List.merge (fun a b -> a-b) (literalsList a) (literalsList b)
-  | Equivalent(a, b) ->
-     List.merge (fun a b -> a-b) (literalsList a) (literalsList b);;
-  
+open Dictionary;;
+
+let to_dot nodes file =
+  let i = ref 0 in
+  let indexedNodeList = List.map (fun node -> incr i; (node, !i)) nodes in (* list of all nodes indexed by an int*)
+  let channel = open_out file in
+  let rec aux = function
+    | [] -> ()
+    | x::q -> aux q;
+      let n, i = x in
+      match n with
+        | LeafFalse -> Printf.fprintf channel "%d [label = \"False\"];\n" i
+        | LeafTrue -> Printf.fprintf channel "%d [label = \"True\"];\n" i
+        | Node (Var(x), fg, fd) ->
+          let ifg = List.assoc fg indexedNodeList and ifd = List.assoc fd indexedNodeList in
+          Printf.fprintf channel "%d [label = \"x%d\"];\n%d -> %d [style=dotted];\n%d -> %d;\n" i x i ifg i ifd;
+  in
+  Printf.fprintf channel "digraph BDD {\n";
+  aux indexedNodeList;
+  Printf.fprintf channel "}";
+  flush channel;;
