@@ -1,8 +1,9 @@
 open Expr;;
 open Dict_list;;
 open BuildROBDD;;
+open Print_formula;;
 
-module OBDD_List = ROBDD_BUILDER(ROBDD_LIST);;
+module OBDD_List = ROBDD_BUILDER(ROBDD_LIST);; (* change here to select the dictionary implementation *)
 
 let name = "/tmp/out"
 let fileDot = String.concat "" [name; ".dot"]
