@@ -43,8 +43,7 @@ let tree_to_dot nodes file =
   fprintf channel "}\n\n";
   flush channel;;
 
-open StdLabels;;
-
+(* Print the formula into a dot file *)
 let prop_to_dot formula file =
   let channel = open_out file in
   let i = ref 1 in

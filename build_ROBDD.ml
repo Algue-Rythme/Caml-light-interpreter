@@ -1,6 +1,11 @@
 open Dictionary;;
 open Expr;;
 
+(*
+  Functor to create ROBDD with a propFormula,
+  take a dictionary as argument to choose the efficeincy of the implementation 
+*)
+
 module ROBDD_BUILDER =
   functor (Dict : Dictionary) ->
     struct
