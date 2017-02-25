@@ -5,14 +5,16 @@ open Print_formula;;
 
 module OBDD_List = ROBDD_BUILDER(ROBDD_LIST);; (* change here to select the dictionary implementation *)
 
-let name = "/tmp/out"
-let fileDot = String.concat "" [name; ".dot"]
+let robddDot = "/tmp/ROBDD"
+let propDot = "/tmp/Formula"
+let fileDot name = String.concat "" [name; ".dot"]
 
 let compile f =
   begin
     printPropFormula f;
+    prop_to_dot f (fileDot propDot);
     let tree, nodes = OBDD_List.create f in
-    to_dot nodes fileDot;
+    tree_to_dot nodes (fileDot robddDot);
     print_newline();
   end
 
