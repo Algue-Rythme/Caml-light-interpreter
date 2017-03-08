@@ -1,10 +1,10 @@
 open Expr;;
-open Dict_litMap;;
+open Dict_litHash;;
 open Build_ROBDD;;
 open Print_formula;;
 open Tseitin;;
 open Sifting;;
-module OBDD_Build = ROBDD_BUILDER(ROBDD_LITMAP);; (* change here to select the dictionary implementation *)
+module OBDD_Build = ROBDD_BUILDER(ROBDD_LITHASH);; (* change here to select the dictionary implementation *)
 
 let robddDot = "/tmp/ROBDD"
 let propDot = "/tmp/Formula"
