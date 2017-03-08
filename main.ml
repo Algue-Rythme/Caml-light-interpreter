@@ -13,6 +13,7 @@ let fileDot name = String.concat "" [name; ".dot"]
 let compile f =
   begin
     printPropFormula f;
+    printCNF (to_cnf f) "sat.txt";
     prop_to_dot f (fileDot propDot);
     let tree, nodes = OBDD_List.create f in
     tree_to_dot nodes (fileDot robddDot);

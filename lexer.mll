@@ -5,7 +5,7 @@
 
 rule token = parse
     | [' ' '\t']            {   token lexbuf            }
-    | '\n'                  {   EOL                     }
+    | ['0' '\n']            {   EOL                     }
     | "<=>"                 {   EQUIVALENT              }
     | "=>"                  {   IMPLIES                 }
     | 'X'                   {   XOR                     }
