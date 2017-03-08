@@ -1,18 +1,9 @@
 open Array;;
 open Build_ROBDD;;
-open Dict_list;;
+open Dict_litMap;;
 open Dictionary;;
 
-module HashLit =
-struct
-  type t = literal
-  let compare a b = match a, b with
-    | Var(i), Var(j) -> i-j
-end
-
-module LitMap = Map.Make(HashLit);;
-
-module OBDD_List = ROBDD_BUILDER(ROBDD_LIST);; (* change here to select the dictionary implementation *)
+module OBDD_List = ROBDD_BUILDER(ROBDD_LITMAP);; (* change here to select the dictionary implementation *)
 
 type robdd_sifting = { mutable tree : robdd;
 		       mutable nodes : robdd list;
