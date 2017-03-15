@@ -22,8 +22,8 @@ let compile f =
       printPropFormula f;
       printCNF (to_cnf f) "sat.txt";
       prop_to_dot f (fileDot propDot);
-      let tree, nodes = OBDD_Build.create f in
-      tree_to_dot nodes (fileDot robddDot);
+      let sift = make_robdd_sifting f in
+      tree_to_dot (get_nodes sift) (fileDot robddDot);
       print_newline();
     with
     | Failure(s) -> print_string "Error : "; print_string s; print_string "\n";
