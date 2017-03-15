@@ -6,6 +6,7 @@ open Dict_list
 open Build_ROBDD
 
 open Tseitin
+open Sifting_utils
 open Sifting
 
 open Tests

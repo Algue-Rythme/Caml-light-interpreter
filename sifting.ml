@@ -1,4 +1,7 @@
 open Sifting_utils;;
+open Expr;;
+open Dictionary;;
+open Dict_litHash;;
 
 (* swap i and i+1 *)
 let swap sift i =
