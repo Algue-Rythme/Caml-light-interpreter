@@ -43,6 +43,7 @@ let tree_to_dot nodes file =
   aux indexedNodeList;
   printf "}\n\n";
   flush channel;;
+  close_out channel;;
 
 (* Print the formula into a dot file *)
 let prop_to_dot formula file =
@@ -74,6 +75,7 @@ let prop_to_dot formula file =
   aux 0 formula;
   printf "}\n\n";
   flush channel;;
+  close_out channel;;
 
 open Tseitin;;
 
@@ -82,4 +84,7 @@ let printCNF formula file =
   let printf s = fprintf channel (format_of_string s) in
   let printClause = List.iter (function CNF_Literal(l) -> printf "%d " l) in
   let printClauses = List.iter (function Clause(lits) -> printClause lits; printf "0\n") in
-  let CNF(clauses) = formula in printClauses clauses;;
+  let CNF(clauses) = formula in
+  flush channel;
+  close chanel;
+  printClauses clauses;;
