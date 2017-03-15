@@ -42,7 +42,7 @@ let tree_to_dot nodes file =
   printf "digraph ROBDD {\n";
   aux indexedNodeList;
   printf "}\n\n";
-  flush channel;;
+  flush channel;
   close_out channel;;
 
 (* Print the formula into a dot file *)
@@ -59,22 +59,22 @@ let prop_to_dot formula file =
       | Const(false) -> printf "\"False\"];\n"; -1
       | Literal(x) -> printf "\"x%d\"];\n" x; -1
       | Not(x) -> printf "\"~\"];\n"; aux cur x
-      | And(a, b) -> printf "\"&&\"];\n"; aux cur a; aux cur b
-      | Or(a, b) -> printf "\"||\"];\n"; aux cur a; aux cur b
-      | Xor(a, b) -> printf "\"X\"];\n"; aux cur a; aux cur b
+      | And(a, b) -> printf "\"&&\"];\n"; let _ =  aux cur a; aux cur b
+      | Or(a, b) -> printf "\"||\"];\n"; let _ = aux cur a; aux cur b
+      | Xor(a, b) -> printf "\"X\"];\n"; let _ = aux cur a; aux cur b
       | Implies(a, b) ->
         fprintf channel "\"=>\"];\n";
         let hypothesis = aux cur a in
         let consequence = aux cur b in
         printf "node_%d -> node_%d [style=dotted];\n" hypothesis consequence; -1
-      | Equivalent(a, b) -> printf "\"<=>\"];\n"; aux cur a; aux cur b
+      | Equivalent(a, b) -> printf "\"<=>\"];\n"; let _ = aux cur a; aux cur b
     in cur
   in
   printf "digraph Formula {\n";
   printf "node_0 [label = \"Out\"];\n";
   aux 0 formula;
   printf "}\n\n";
-  flush channel;;
+  flush channel;
   close_out channel;;
 
 open Tseitin;;
@@ -85,6 +85,6 @@ let printCNF formula file =
   let printClause = List.iter (function CNF_Literal(l) -> printf "%d " l) in
   let printClauses = List.iter (function Clause(lits) -> printClause lits; printf "0\n") in
   let CNF(clauses) = formula in
+  printClauses clauses;
   flush channel;
-  close chanel;
-  printClauses clauses;;
+  close_out channel;;
