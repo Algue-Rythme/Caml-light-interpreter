@@ -10,6 +10,8 @@ end
 
 module LitHash = Hashtbl.Make(HashLit);;
 
+(* TODO : commenter *)
+
 module ROBDD_LITHASH =
 struct
   type dict = robdd list LitHash.t * (robdd list ref)
@@ -33,13 +35,13 @@ struct
 
   let add dict node = let dict_list, liste = dict in match node with
     | Node(i, _, _) when LitHash.mem dict_list i ->
-       LitHash.add dict_list i (node::(LitHash.find dict_list i)); liste := node::!liste;
+       LitHash.replace dict_list i (node::(LitHash.find dict_list i)); liste := node::!liste;
     | Node(i, _, _) ->
-       LitHash.add dict_list i [node]; liste := node::!liste;
+       LitHash.replace dict_list i [node]; liste := node::!liste;
     | LeafFalse | LeafTrue -> match LitHash.mem dict_list v0 with
-      | false -> LitHash.add dict_list v0 [node];
+      | false -> LitHash.replace dict_list v0 [node];
 	liste := node::!liste;
-      | true -> LitHash.add dict_list v0 (node::(LitHash.find dict_list v0));
+      | true -> LitHash.replace dict_list v0 (node::(LitHash.find dict_list v0));
 	liste := node::!liste
        
   let to_list dict =
