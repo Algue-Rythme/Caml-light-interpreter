@@ -23,11 +23,13 @@ let compile f =
       printCNF (to_cnf f) "sat.txt";
       prop_to_dot f (fileDot propDot);
       let sift = make_robdd_sifting f in
-      tree_to_dot (get_nodes sift) (fileDot robddDot);
+      let robdd, nodes = sift_to_robdd sift in
+      tree_to_dot nodes (fileDot robddDot);
       print_newline();
     with
     | Failure(s) -> print_string "Error : "; print_string s; print_string "\n";
-    | _ -> print_string "Unknow error"
+    | Not_found -> print_string "Error : not found\n"
+    | _ -> print_string "Unknown error"
   end
 
 let calc () =
