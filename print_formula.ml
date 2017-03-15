@@ -35,7 +35,7 @@ let tree_to_dot nodes file =
       match n with
         | LeafFalse -> printf "tree_%d [label = \"False\"];\n" i
         | LeafTrue -> printf "tree_%d [label = \"True\"];\n" i
-        | Node (Var(x), fg, fd) ->
+        | Node (Var(x), fg, fd, _) ->
           let ifg = List.assoc fg indexedNodeList and ifd = List.assoc fd indexedNodeList in
           printf "tree_%d [label = \"x%d\"];\ntree_%d -> tree_%d [style=dotted];\ntree_%d -> tree_%d;\n" i x i ifg i ifd;
   in
