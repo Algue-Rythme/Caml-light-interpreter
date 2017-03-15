@@ -2,10 +2,11 @@ open Array;;
 open Build_ROBDD;;
 open Dict_litHash;;
 open Dictionary;;
+open Expr;;
 
 module OBDD_Build = ROBDD_BUILDER(ROBDD_LITHASH);; (* change here to select the dictionary implementation *)
 
-type tree_sifting = LeafTrue_s | LeafFalse_s | Node_s of literal * int * int;;
+type tree_sifting = LeafTrue_s | LeafFalse_s | Node_s of literal * int * int * propFormula;;
 
 module HashTree =
 struct
@@ -86,10 +87,10 @@ let make_robdd_sifting f =
 		TreeHash.replace node_int LeafFalse_s i;
 		nodeList := LeafFalse_s::!nodeList;
 		
-	      | Node(v, fg, fd) -> 
+	      | Node(v, fg, fd, formula) -> 
 		 let g = RobddHash.find robdd_int fg and
 		     d = RobddHash.find robdd_int fd in
-		 let node = Node_s(Var(!actualName), g, d) in
+		 let node = Node_s(Var(!actualName), g, d, formula) in
 		 IntHash.replace nameTable !actualName v;
 		 incr actualName;
 		 IntHash.replace int_node i node;
@@ -104,9 +105,9 @@ let make_robdd_sifting f =
     | [] -> ()
     | x::q -> make_lvlTable q;
       match x with
-      | Node_s(i, _, _) when LitHash.mem lvlTable i ->
+      | Node_s(i, _, _, _) when LitHash.mem lvlTable i ->
 	 LitHash.replace lvlTable i (x::(LitHash.find lvlTable i))
-      | Node_s(i, _, _) -> LitHash.replace lvlTable i [x]
+      | Node_s(i, _, _, _) -> LitHash.replace lvlTable i [x]
       |  LeafFalse_s | LeafTrue_s -> match LitHash.mem lvlTable v0 with
 	| false -> LitHash.replace lvlTable v0 [x]
 	| true -> LitHash.replace lvlTable v0 (x::(LitHash.find lvlTable v0))
@@ -137,9 +138,10 @@ let sift_to_robdd sift =
 	 l := LeafTrue::!l;
       RobddHash.add hashTbl LeafTrue true;
       LeafTrue
-    | Node_s(Var(v), i, j) -> let n = Node(Var(v),
-					   tree_to_robdd (IntHash.find sift.int_node i),
-					   tree_to_robdd (IntHash.find sift.int_node j)) in
+    | Node_s(Var(v), i, j, formula) -> let n = Node(IntHash.find sift.renamingTable v,
+						    tree_to_robdd (IntHash.find sift.int_node i),
+						    tree_to_robdd (IntHash.find sift.int_node j),
+						    formula) in
 			      if not (RobddHash.mem hashTbl n) then
 			   l:= n::!l;
 			 RobddHash.replace hashTbl n true;
@@ -164,9 +166,9 @@ let sift_to_bdd_renamed sift =
 	 l := LeafTrue::!l;
       RobddHash.add hashTbl LeafTrue true;
       LeafTrue
-    | Node_s(v, i, j) -> let n = Node(v,
-					   tree_to_robdd (IntHash.find sift.int_node i),
-					   tree_to_robdd (IntHash.find sift.int_node j)) in
+    | Node_s(v, i, j, formula) -> let n = Node(v, tree_to_robdd (IntHash.find sift.int_node i),
+					       tree_to_robdd (IntHash.find sift.int_node j),
+					       formula) in
 			      if not (RobddHash.mem hashTbl n) then
 			   l:= n::!l;
 			 RobddHash.replace hashTbl n true;
@@ -181,8 +183,8 @@ let registered_node sift node = let v0 = Var(0) in match node with
   | LeafTrue_s when not (LitHash.mem sift.lvlTable v0) -> false
   | LeafFalse_s when not (LitHash.mem sift.lvlTable v0) -> false
   | LeafTrue_s | LeafFalse_s -> List.mem node (LitHash.find sift.lvlTable v0)
-  | Node_s(i, _, _) when not (LitHash.mem sift.lvlTable i) -> false
-  | Node_s(i, _, _) -> List.mem node (LitHash.find sift.lvlTable i);;
+  | Node_s(i, _, _, _) when not (LitHash.mem sift.lvlTable i) -> false
+  | Node_s(i, _, _, _) -> List.mem node (LitHash.find sift.lvlTable i);;
 
 (* Remove a node in the robdd_sifting *)
 let free_node sift node =
@@ -198,11 +200,6 @@ let free_node sift node =
   match node with
   | LeafTrue_s | LeafFalse_s ->
      LitHash.replace sift.lvlTable v0 (del_list (LitHash.find sift.lvlTable v0) node)
-  | Node_s(x, _, _) ->
+  | Node_s(x, _, _, _) ->
      LitHash.replace sift.lvlTable x (del_list (LitHash.find sift.lvlTable x) node)
 
-(* swap i and i+1 *)
-let swap sift i =
-  let vi = Var(i) and vip1 = Var(i+1) in
-  let listeNoeuds = LitHash.find sift.lvlTable vi in
-  ()
