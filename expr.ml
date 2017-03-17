@@ -1,5 +1,4 @@
 (* by convention always write code about operators sorted by priority *)
-
 type propFormula =
     Const of bool
   | Literal of int
@@ -31,6 +30,20 @@ let replace formula i value =
     | Implies(a, b) -> Implies(aux a, aux b)
     | Equivalent(a, b) -> Equivalent(aux a, aux b)
   in aux formula;;
+
+let rename_variable formula i j =
+  let rec aux form = match form with
+    | Const(c) -> Const(c)
+    | Literal(x) when x = i -> Literal(j)
+    | Literal(x) when x = -i -> Literal(-j)
+    | Literal(x) -> Literal(x)
+    | Not(a) -> Not(aux a)
+    | And(a, b) -> And(aux a, aux b)
+    | Or(a, b) -> Or(aux a, aux b)
+    | Xor(a, b) -> Xor(aux a, aux b)
+    | Implies(a, b) -> Implies(aux a, aux b)
+    | Equivalent(a, b) -> Equivalent(aux a, aux b) in
+  aux formula;;
 
 (* replace literals in the proposition according to the domain *)
 let rec replaceLiterals formula = function

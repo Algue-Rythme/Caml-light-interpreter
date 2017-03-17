@@ -1,7 +1,7 @@
 open Expr
 
 type literal = Var of int;;
-type robdd = LeafFalse | LeafTrue | Node of literal * robdd * robdd * propFormula;;
+type robdd = LeafFalse | LeafTrue | Node of literal * robdd * robdd;;
 
 module type Dictionary =
 sig
