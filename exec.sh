@@ -1,6 +1,6 @@
 #!/bin/sh
-formula=/tmp/Formula
-robdd=/tmp/ROBDD
+formula=out/Formula
+robdd=out/ROBDD
 
 make \
 && ./f2bdd "$@" \

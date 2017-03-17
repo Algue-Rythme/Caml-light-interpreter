@@ -12,8 +12,8 @@ open Tests
 
 module OBDD_Build = ROBDD_BUILDER(ROBDD_LIST) (* change here to select the dictionary implementation *)
 
-let robddDot = "/tmp/ROBDD"
-let propDot = "/tmp/Formula"
+let robddDot = "out/ROBDD"
+let propDot = "out/Formula"
 let fileDot name = String.concat "" [name; ".dot"]
 
 let compile f =
