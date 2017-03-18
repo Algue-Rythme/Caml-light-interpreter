@@ -5,8 +5,13 @@ type cnf_literal = CNF_Literal of int;;
 type clause = Clause of cnf_literal list;;
 type cnf = CNF of clause list;;
 
-let concat_and cnfs = CNF(concat (map (function CNF(l) -> l) cnfs));;
-let concat_or clauses = Clause(concat (map (function Clause(l) -> l) clauses));;
+let dezip_literal = function CNF_Literal(i) -> i;;
+let dezip_clause = function | Clause(clause) -> clause;;
+let dezip_cnf = function | CNF(cnf) -> cnf;;
+
+let concat_and cnfs = CNF(concat (map dezip_cnf cnfs));;
+let concat_or clauses = Clause(concat (map dezip_clause clauses));;
+
 let lit l = CNF_Literal(l);;
 let fOr l = CNF([Clause(map (function i -> lit i) l)]);;
 let fAnd = concat_and;;

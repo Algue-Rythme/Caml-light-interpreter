@@ -42,7 +42,6 @@ let tree_to_dot nodes file =
   printf "digraph ROBDD {\n";
   aux indexedNodeList;
   printf "}\n\n";
-  flush channel;
   close_out channel;;
 
 (* Print the formula into a dot file *)
@@ -72,19 +71,24 @@ let prop_to_dot formula file =
   in
   printf "digraph Formula {\n";
   printf "node_0 [label = \"Out\"];\n";
-  aux 0 formula;
+  let _ = aux 0 formula in
   printf "}\n\n";
-  flush channel;
   close_out channel;;
 
 open Tseitin;;
 
-let printCNF formula file =
+let nb_var_cnf cnf = List.length (
+    List.sort_uniq (fun a b -> (abs a)-(abs b))
+      (List.map dezip_literal
+         (List.concat (List.map dezip_clause (dezip_cnf cnf)))
+      )
+  );;
+
+let printCNF cnf file =
   let channel = open_out file in
   let printf s = fprintf channel (format_of_string s) in
+  printf "p cnf %d %d\n" (nb_var_cnf cnf) (List.length (dezip_cnf cnf));
   let printClause = List.iter (function CNF_Literal(l) -> printf "%d " l) in
   let printClauses = List.iter (function Clause(lits) -> printClause lits; printf "0\n") in
-  let CNF(clauses) = formula in
-  printClauses clauses;
-  flush channel;
+  printClauses (dezip_cnf cnf);
   close_out channel;;
