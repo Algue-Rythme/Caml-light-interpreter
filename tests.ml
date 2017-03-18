@@ -9,19 +9,19 @@ let apply_range f g a b =
 let nothing i = ();;
 
 let gen_parity n =
-  let channel = open_out "parity.form" in
+  let channel = open_out "out/parity.form" in
   let printf s = fprintf channel (format_of_string s) in
   apply_range (fun i -> if i != 1 then printf " X %d" i else printf "%d" i) (fun i -> printf " 0\n") 1 n;
   close_out channel;;
 
 let gen_rotations n =
-  let channel = open_out "rotation.form" in
+  let channel = open_out "out/rotation.form" in
   let printf s = fprintf channel (format_of_string s) in
   apply_range (fun i -> printf "(%d <=> %d) /\\ " i (i+1)) (fun i -> printf "(%d <=> %d) 0\n" n i) 1 n;
   close_out channel;;
 
 let gen_pigeonhole n =
-  let channel = open_out "pigeonhole.form" in
+  let channel = open_out "out/pigeonhole.form" in
   let printf s = fprintf channel (format_of_string s) in
   let var p t = (p-1)*n + t in
   let n_or p = printf "("; apply_range (fun t -> printf "%d \\/ " (var p t)) (fun t -> printf "%d" (var p n)) 1 n; printf ")" in
