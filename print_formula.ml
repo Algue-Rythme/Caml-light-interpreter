@@ -92,3 +92,4 @@ let printCNF cnf file =
   let printClauses = List.iter (function Clause(lits) -> printClause lits; printf "0\n") in
   printClauses (dezip_cnf cnf);
   close_out channel;;
+

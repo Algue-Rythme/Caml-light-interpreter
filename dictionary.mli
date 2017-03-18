@@ -1,3 +1,5 @@
+open Expr
+
 type literal = Var of int;;
 type robdd = LeafFalse | LeafTrue | Node of literal * robdd * robdd;;
 

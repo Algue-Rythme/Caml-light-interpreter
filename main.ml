@@ -1,15 +1,16 @@
 open Expr
 open Print_formula
 open Dict_list
+open Dict_litHash
 open Build_ROBDD
 open Tseitin
 open Minisat
-open Sifting
 
 module OBDD_Build = ROBDD_BUILDER(ROBDD_LIST) (* change here to select the dictionary implementation *)
 
 let robddDot = "out/ROBDD"
 let propDot = "out/Formula"
+
 let fileDot name = String.concat "" [name; ".dot"]
 
 let sat_file = "out/sat.txt"
