@@ -8,14 +8,15 @@ open Build_ROBDD
 
 open Tseitin
 open Sifting_utils
+open Robdd_to_tree
 open Sifting
 
 open Tests
 
 module OBDD_Build = ROBDD_BUILDER(ROBDD_LITHASH) (* change here to select the dictionary implementation *)
 
-let robddDot = "/tmp/ROBDD"
-let propDot = "/tmp/Formula"
+let robddDot = "./ROBDD"
+let propDot = "./Formula"
 let fileDot name = String.concat "" [name; ".dot"]
 
 let compile f =
@@ -25,12 +26,11 @@ let compile f =
       (*printCNF (to_cnf f) "sat.txt";*)
       (*prop_to_dot f (fileDot propDot);*)
       let sift = make_robdd_sifting f in
-      swap sift 1;
-      swap sift 2;
       let robdd, nodes = sift_to_robdd sift in
+      (*let robdd, nodes = node_list_memory sift in*)
       let robdd_classique, nodes_classique = OBDD_Build.create f in
       (*tree_to_dot nodes_classique (fileDot robddDot);*)
-      tree_to_dot nodes (fileDot robddDot);
+      tree_to_dot nodes (fileDot robddDot) "Graphe";
       print_newline();
     with
     | Failure(s) -> print_string "Error : "; print_string s; print_string "\n";

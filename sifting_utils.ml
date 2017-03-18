@@ -43,6 +43,7 @@ type robdd_sifting = {
   mutable size : int; (* size of the DAG, may evolve with swapping *)
 
   mutable renamingTable : literal IntHash.t; (* a hashtable for renaming of variables*)
+  mutable nameLit : int LitHash.t;
 
   mutable lvlLitTable : literal IntHash.t; (* a map to store where each variable is *)
   
@@ -60,7 +61,9 @@ let make_robdd_sifting f =
   let n = List.length nodes in
   let lvlTable = LitHash.create 0 in
   let nameTable = IntHash.create 0 and
-      actualName = ref 1 in
+      actualName = ref 1 and
+      nameLit = LitHash.create 0
+  in
   let lvlLitTable = IntHash.create 0 in
   let nodeList = ref [] in
   let node_int = TreeHash.create n and
@@ -68,13 +71,13 @@ let make_robdd_sifting f =
       robdd_int = RobddHash.create n
   in
   
-  (* index all the nodes -> memory *)
+  (* give an adress in memory for every node *)
   let rec index_node list c = match list with
     | [] -> ()
     | x::q -> 
        RobddHash.replace robdd_int x c;
       index_node q (c+1) in
-  
+  (* register the node in memory (conversion and renaming) *)
   let rec make_sifting_mem list = match list with
     | [] -> ()
     | x::q -> make_sifting_mem q;
@@ -93,15 +96,24 @@ let make_robdd_sifting f =
       | Node(Var(v), fg, fd) -> 
 	 let g = RobddHash.find robdd_int fg and
 	     d = RobddHash.find robdd_int fd in
-	 let node = Node_s(Var(!actualName), g, d) in
-	 IntHash.replace nameTable !actualName (Var(v));
-	 incr actualName;
+	 let node =
+	   if not(LitHash.mem nameLit (Var(v)) ) then (
+	     IntHash.replace nameTable !actualName (Var(v));
+	     LitHash.replace nameLit (Var(v)) !actualName;
+	     incr actualName;
+	     Node_s(Var(!actualName-1), g, d)
+	   )
+	   else (
+	     let name = LitHash.find nameLit (Var(v)) in
+	     Node_s(Var(name), g, d)
+	   )
+	 in
 	 IntHash.replace int_node i node;
 	 TreeHash.replace node_int node i;
 	 nodeList := node::!nodeList;
 	 
   in
-  
+  (* Create the lvl table (list of all the node for a given litteral of the tree) *)
   let rec make_lvlTable list =
     let v0 = Var(0) in
     match list with
@@ -109,10 +121,11 @@ let make_robdd_sifting f =
     | x::q -> make_lvlTable q;
       match x with
       | Node_s(i, _, _) when LitHash.mem lvlTable i ->
-	 LitHash.replace lvlTable i (x::(LitHash.find lvlTable i));
-      | Node_s(i, _, _) -> LitHash.replace lvlTable i [x];
+	 LitHash.replace lvlTable i (x::(LitHash.find lvlTable i)); (* Append the list*)
+	
+      | Node_s(i, _, _) -> LitHash.replace lvlTable i [x]; (* create the list *)
 	let vi = match i with Var(vi)->vi in
-	IntHash.replace lvlLitTable vi i;
+	IntHash.replace lvlLitTable vi i; (* the ith lit is at level i in the dag *)
 		
       |  LeafFalse_s | LeafTrue_s -> match LitHash.mem lvlTable v0 with
 	| false -> LitHash.replace lvlTable v0 [x]
@@ -122,67 +135,10 @@ let make_robdd_sifting f =
   make_sifting_mem (List.rev nodes); (* list reverted to keep the order on the variables *)
   make_lvlTable !nodeList;
   let s = {root=(RobddHash.find robdd_int tree); lvlTable=lvlTable; size=n;
-	   renamingTable=nameTable; lvlLitTable; node_int; int_node;
+	   renamingTable=nameTable;nameLit; lvlLitTable; node_int; int_node;
 	   mem_offset=n; avaible_index=[]}
   in
   s;;
-
-
-(* take a sifting object and gives the shared robdd + the list of the nodes *)
-let sift_to_robdd sift =
-  let l = ref []
-  and hashTbl = RobddHash.create sift.size in
-  
-  let rec tree_to_robdd tree = match tree with
-    | LeafFalse_s ->
-       if not (RobddHash.mem hashTbl LeafFalse) then
-	 l := LeafFalse::!l;
-      RobddHash.replace hashTbl LeafFalse true;
-      LeafFalse
-    | LeafTrue_s -> 
-       if not (RobddHash.mem hashTbl LeafTrue) then 
-	 l := LeafTrue::!l;
-      RobddHash.add hashTbl LeafTrue true;
-      LeafTrue
-    | Node_s(Var(v), i, j) ->
-       let n = Node(IntHash.find sift.renamingTable v,
-		    tree_to_robdd (IntHash.find sift.int_node i),
-		    tree_to_robdd (IntHash.find sift.int_node j)) in
-       if not (RobddHash.mem hashTbl n) then
-	 l:= n::!l;
-       RobddHash.replace hashTbl n true;
-       n
-  in
-  let t = tree_to_robdd (IntHash.find sift.int_node sift.root) in
-  t, !l;;
-
-(* Take a sifting object and gives the shared robdd + list of all nodes with the renaming *)
-let sift_to_bdd_renamed sift =
-  let l = ref []
-  and hashTbl = RobddHash.create sift.size in
-  
-  let rec tree_to_robdd tree = match tree with
-    | LeafFalse_s ->
-       if not (RobddHash.mem hashTbl LeafFalse) then
-	 l := LeafFalse::!l;
-      RobddHash.replace hashTbl LeafFalse true;
-      LeafFalse
-    | LeafTrue_s -> 
-       if not (RobddHash.mem hashTbl LeafTrue) then 
-	 l := LeafTrue::!l;
-      RobddHash.add hashTbl LeafTrue true;
-      LeafTrue
-    | Node_s(v, i, j) ->
-       let n = Node(v, tree_to_robdd (IntHash.find sift.int_node i),
-		    tree_to_robdd (IntHash.find sift.int_node j)) in
-       if not (RobddHash.mem hashTbl n) then
-	 l:= n::!l;
-       RobddHash.replace hashTbl n true;
-       n
-  in
-  let t = tree_to_robdd (IntHash.find sift.int_node sift.root) in
-  t, !l;;
-
 
 (* Indicate if a node is present in the robdd_sifting *)
 let registered_node sift node = TreeHash.mem sift.node_int node;;
@@ -207,15 +163,27 @@ let remove_node sift node =
 
 (* Free the memory for the node *)
 let free_node sift node =
+  if not (TreeHash.mem sift.node_int node) then ()
+  else
   let index = TreeHash.find sift.node_int node in
   sift.avaible_index <- index::sift.avaible_index;
-  remove_node sift node;;
+  remove_node sift node
+  ;;
 
 let updateIndex sift index node =
   let oldNode = IntHash.find sift.int_node index in
+  remove_node sift oldNode;
   IntHash.replace sift.int_node index node;
-  TreeHash.replace sift.node_int node index
-;;
+  TreeHash.replace sift.node_int node index;
+  if node = LeafFalse_s or node = LeafTrue_s then
+    ()
+  else
+    let v = match node with
+      | Node_s(x, _, _) -> x
+      | _ -> failwith "Updating a with a Leaf"
+    in
+    LitHash.replace sift.lvlTable v (node::(LitHash.find sift.lvlTable v));
+  ;;
 
 let add_node_if_not_present sift node =
   if registered_node sift node then

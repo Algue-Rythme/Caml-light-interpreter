@@ -41,7 +41,11 @@ let swap sift i =
 	 else
 	   add_node_if_not_present sift (Node_s(vi, f00Index, f10Index))
        in
-       updateIndex sift actualIndex (Node_s(vip1, lowIndex, highIndex))
+       let newNode = if lowIndex = highIndex then
+	   IntHash.find sift.int_node lowIndex
+	 else
+	   Node_s(vip1, lowIndex, highIndex) in
+       updateIndex sift actualIndex newNode;
   in
   let rec aux l = match l with
     | [] -> ()
