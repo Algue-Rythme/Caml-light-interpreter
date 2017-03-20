@@ -3,7 +3,6 @@ open Print_formula
 open Dict_list
 open Dict_litHash
 open Build_ROBDD
-open Tseitin
 open Minisat
 
 open Sifting
@@ -17,26 +16,23 @@ let propDot = "out/Formula"
 
 let fileDot name = String.concat "" [name; ".dot"]
 
-let sat_file = "out/sat.txt"
-
 let process f =
   begin
     try
       printPropFormula f;
-      printCNF (to_cnf f) "out/test.cnf";
-      call_minisat "out/test.cnf" sat_file;
       prop_to_dot f (fileDot propDot);
       (*let tree, nodes = OBDD_Build.create f in*)
       let sift = make_robdd_sifting f in
       sifting sift;
       (*let tree, nodes = node_list_memory sift in*)
       let tree, nodes = sift_to_robdd sift in
+      comp_cnf_robdd "out/test.cnf" f tree;
       tree_to_dot nodes (fileDot robddDot);
       print_newline();
     with
     | Failure(s) -> print_string "Error : "; print_string s; print_newline ();
     | Not_found -> print_string "Not found\n";
-    | _ -> print_string "Unknow error\n"
+    | s -> print_string "Unknown error\n"; raise s
   end
 
 let compute () =
@@ -47,7 +43,7 @@ let compute () =
     let result = parse () in
     process result; flush stdout
   with
-  | _ -> print_string "Typo error\n" );
+  | s -> print_string "Typo error\n"; raise s);
   close_in channel;;
 
 let _ = compute ()
