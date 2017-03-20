@@ -47,6 +47,8 @@ type robdd_sifting = {
   mutable nameLit : int LitHash.t;
 
   mutable lvlLitTable : literal IntHash.t; (* a map to store where each variable is *)
+
+  nb_lit : int; (* the number of literals, for the sifting*)
   
   (* memory emulation *)
   mutable node_int : int TreeHash.t; (* mapping node -> index *)
@@ -150,7 +152,7 @@ let make_robdd_sifting f =
   make_sifting_mem nodes_2; (* list sorted to keep the order on the variables *)
   make_lvlTable !nodeList;
   let s = {root=(RobddHash.find robdd_int tree); lvlTable=lvlTable; size=n;
-	   renamingTable=nameTable;nameLit; lvlLitTable; node_int; int_node;
+	   renamingTable=nameTable;nameLit; lvlLitTable; nb_lit=(!actualName-1);node_int; int_node;
 	   mem_offset=n; avaible_index=[]; number_link_to}
   in
   s;;

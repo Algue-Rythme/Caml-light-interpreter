@@ -10,7 +10,6 @@ open Printf;;
 let swap sift i =
   let vi = IntHash.find sift.lvlLitTable i and
       vip1 = IntHash.find sift.lvlLitTable (i+1) in
-  let a = match vip1 with Var(a) -> a in
   IntHash.replace sift.lvlLitTable i vip1;
   IntHash.replace sift.lvlLitTable (i+1) vi;
   let listeNoeuds = LitHash.find sift.lvlTable vi in
@@ -56,7 +55,6 @@ let swap sift i =
        let newNode = if (lowIndex = highIndex) then
 	   IntHash.find sift.int_node lowIndex
 	 else(
-	   Printf.printf "Creating Node(%d, %d, %d) -> %d\n" (i+1) lowIndex highIndex actualIndex;
 	   Node_s(vip1, lowIndex, highIndex)) in
        updateIndex sift actualIndex newNode;
   in
@@ -71,20 +69,29 @@ let swap sift i =
     | LeafFalse_s::q -> free_mem q
     | LeafTrue_s::q -> free_mem q
     | x::q when List.mem x !node_not_to_free -> free_mem q;
-    | x::q -> let a, b, c = match x with Node_s(Var(a), b, c) -> a, b, c | _ -> 0, 0, 0 in
-	      Printf.printf "Remove Node(%d, %d, %d) -> %d\n" a b c (TreeHash.find sift.node_int x);
-	      free_node sift x; free_mem q;
+    | x::q -> free_node sift x; free_mem q;
   in
 free_mem !node_to_free;
 ;;
 
 let sifting sift =
-  let iMin = ref 0 and tailleMin = ref 50000 in
-  for i = 1 to 3 do
-    swap sift i;
-    if (sift.size < !tailleMin) then (
-      iMin := i;
-      tailleMin := sift.size;
-    );
-  done;
-  print_int !iMin;;
+  for i = 1 to sift.nb_lit do
+    let jMin = ref i and sizeMin = ref sift.size in
+    for j = i to sift.nb_lit-1 do
+      swap sift j;
+      if sift.size < !sizeMin then (
+	jMin := j;
+	sizeMin := sift.size;
+      )
+    done;
+    for j = sift.nb_lit-1 downto 1 do
+      swap sift j;
+      if sift.size < !sizeMin then (
+	jMin := j;
+	sizeMin := sift.size;
+      )
+    done;
+    for j = 1 to !jMin-1 do
+      swap sift j;
+    done;
+  done;;
