@@ -5,7 +5,7 @@ type cnf_literal = CNF_Literal of int;;
 type clause = Clause of cnf_literal list;;
 type cnf = CNF of clause list;;
 
-let dezip_literal = function CNF_Literal(i) -> i;;
+let dezip_literal = function | CNF_Literal(i) -> i;;
 let dezip_clause = function | Clause(clause) -> clause;;
 let dezip_cnf = function | CNF(cnf) -> cnf;;
 
@@ -34,9 +34,21 @@ let to_cnf formula =
       let lB, b' = aux b in
       let var = addFreshVariable () in
       (var, fAnd [a'; b'; fOr [lA; lB; -var]; fOr [-lA; var]; fOr [-lB; var]])
-    | Xor(a, b) -> aux (And(Or(a, b), Not(And(a, b)))) (* deal with it *)
-    | Implies(a, b) -> aux (Or(b, Not(a))) (* flemme *)
-    | Equivalent(a, b) -> aux (Not(Xor(a, b))) (* flemme *)
+    | Xor(a, b) ->
+      let lA, a' = aux a in
+      let lB, b' = aux b in
+      let var = addFreshVariable () in
+      (var, fAnd [a'; b'; fOr [var; -lA; lB]; fOr [var; lA; -lB]; fOr [-var; lA; lB]; fOr [-var; -lA; -lB]])
+    | Implies(a, b) ->
+      let lA, a' = aux a in
+      let lB, b' = aux b in
+      let var = addFreshVariable () in
+      (var, fAnd [a'; b'; fOr [-var; -lA; lB]; fOr [lA; var]; fOr [-lB; var]])
+    | Equivalent(a, b) ->
+      let lA, a' = aux a in
+      let lB, b' = aux b in
+      let var = addFreshVariable () in
+      (var, fAnd [a'; b'; fOr [-var; -lA; lB]; fOr [-var; lA; -lB]; fOr [var; lA; lB]; fOr [var; -lA; -lB]])
   in
   let l, f = aux formula in
   fAnd [fOr [l]; f];;
