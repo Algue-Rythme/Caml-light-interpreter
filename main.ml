@@ -28,6 +28,7 @@ let process f =
       prop_to_dot f (fileDot propDot);
       (*let tree, nodes = OBDD_Build.create f in*)
       let sift = make_robdd_sifting f in
+      sifting sift;
       (*let tree, nodes = node_list_memory sift in*)
       let tree, nodes = sift_to_robdd sift in
       tree_to_dot nodes (fileDot robddDot);
