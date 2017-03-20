@@ -34,6 +34,7 @@ module TreeHash = Hashtbl.Make(HashTree)
 module RobddHash = Hashtbl.Make(HashRobdd)
 
 (* New type for the sifting : each int represent a pointer to the child *)
+
   
 type robdd_sifting = {
 
@@ -52,6 +53,7 @@ type robdd_sifting = {
   mutable int_node : tree_sifting IntHash.t; (* mapping index -> node *)
   mutable mem_offset : int; (* the next integer for the mapping *)
   mutable avaible_index : int list; (* List of removed index for garbage collecting *)
+  mutable number_link_to : int IntHash.t; (* number of link to a given index in mem *)
 } ;;
 
 (* final tree built at the very end of the process *)  
@@ -68,7 +70,8 @@ let make_robdd_sifting f =
   let nodeList = ref [] in
   let node_int = TreeHash.create n and
       int_node = IntHash.create n and
-      robdd_int = RobddHash.create n
+      robdd_int = RobddHash.create n and
+      number_link_to = IntHash.create n 
   in
   let required_index = IntHash.create n in
   
@@ -97,6 +100,16 @@ let make_robdd_sifting f =
       | Node(Var(v), fg, fd) -> 
 	 let g = RobddHash.find robdd_int fg and
 	     d = RobddHash.find robdd_int fd in
+	 if not (IntHash.mem number_link_to g) then
+	   IntHash.replace number_link_to g 1
+	 else
+	   IntHash.replace number_link_to g ((IntHash.find number_link_to g)+1);
+	 
+	 if not(IntHash.mem number_link_to d) then
+	   IntHash.replace number_link_to d 1
+	 else
+	   IntHash.replace number_link_to d ((IntHash.find number_link_to g)+1);
+	 
 	 let node =
 	   if not(LitHash.mem nameLit (Var(v)) ) then (
 	     IntHash.replace nameTable !actualName (Var(v));
@@ -133,11 +146,12 @@ let make_robdd_sifting f =
 	| true -> LitHash.replace lvlTable v0 (x::(LitHash.find lvlTable v0))
   in
   index_node nodes 0;
-  make_sifting_mem (List.rev nodes); (* list reverted to keep the order on the variables *)
+  let nodes_2 = List.rev (List.sort Pervasives.compare nodes) in
+  make_sifting_mem nodes_2; (* list sorted to keep the order on the variables *)
   make_lvlTable !nodeList;
   let s = {root=(RobddHash.find robdd_int tree); lvlTable=lvlTable; size=n;
 	   renamingTable=nameTable;nameLit; lvlLitTable; node_int; int_node;
-	   mem_offset=n; avaible_index=[]}
+	   mem_offset=n; avaible_index=[]; number_link_to}
   in
   s;;
 
@@ -157,15 +171,20 @@ let remove_node sift node =
   match node with (* remove from the lvlTable *)
   | LeafTrue_s | LeafFalse_s ->
      LitHash.replace sift.lvlTable v0 (del_list (LitHash.find sift.lvlTable v0) node)
-  | Node_s(x, _, _) ->
+  | Node_s(x, indexLow, indexHigh) ->
+     IntHash.replace sift.number_link_to indexLow ((IntHash.find sift.number_link_to indexLow)-1);
+     IntHash.replace sift.number_link_to indexHigh ((IntHash.find sift.number_link_to indexHigh)-1);
      LitHash.replace sift.lvlTable x (del_list (LitHash.find sift.lvlTable x) node)
        
 (* Free the memory for the node *)
 let free_node sift node =
   if not (TreeHash.mem sift.node_int node) then ()
-  else (
+  else let index = TreeHash.find sift.node_int node in
+       if IntHash.mem sift.number_link_to index &&
+	 IntHash.find sift.number_link_to index <> 0 then ()
+  else(
     sift.size <- sift.size-1; (* the size of the sift is decreased *)
-    let index = TreeHash.find sift.node_int node in
+
     sift.avaible_index <- index::sift.avaible_index; (*a new index is avaible*)
     remove_node sift node);; (* now we remove the node*)
 
@@ -175,7 +194,17 @@ let updateIndex sift index node =
   IntHash.replace sift.int_node index node; (* the new node is added*)
   TreeHash.replace sift.node_int node index;
   match node with (* now the new node is added to the lvlTable *)
-  | Node_s(x, _, _) -> LitHash.replace sift.lvlTable x (node::(LitHash.find sift.lvlTable x))
+  | Node_s(x, i, j) ->
+     if not (IntHash.mem sift.number_link_to i) then
+	 IntHash.replace sift.number_link_to i 1
+       else
+	 IntHash.replace sift.number_link_to i ((IntHash.find sift.number_link_to i)+1);
+      
+      if not (IntHash.mem sift.number_link_to j) then
+	 IntHash.replace sift.number_link_to j 1
+       else
+	 IntHash.replace sift.number_link_to j ((IntHash.find sift.number_link_to j)+1);
+      LitHash.replace sift.lvlTable x (node::(LitHash.find sift.lvlTable x))
   | _ -> () (* no interest to add a Leaf *)
 ;;
 
@@ -188,6 +217,16 @@ let add_node_if_not_present sift node =
     match node with
     | LeafFalse_s | LeafTrue_s -> failwith "Adding a Leaf" (* no interest in adding a Leaf *)
     | Node_s(v, i, j) -> (* add the node to the lvlTable *)
+       if not (IntHash.mem sift.number_link_to i) then
+	 IntHash.replace sift.number_link_to i 1
+       else
+	 IntHash.replace sift.number_link_to i ((IntHash.find sift.number_link_to i)+1);
+      
+      if not (IntHash.mem sift.number_link_to j) then
+	 IntHash.replace sift.number_link_to j 1
+       else
+	 IntHash.replace sift.number_link_to j ((IntHash.find sift.number_link_to j)+1);
+
        if LitHash.mem sift.lvlTable v then
 	 LitHash.replace sift.lvlTable v (node::(LitHash.find sift.lvlTable v))
        else
