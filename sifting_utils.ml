@@ -54,7 +54,7 @@ type robdd_sifting = {
   mutable avaible_index : int list; (* List of removed index for garbage collecting *)
 } ;;
 
-(* final tree built at the very end of the process *)
+(* final tree built at the very end of the process *)  
 
 let make_robdd_sifting f =
   let tree, nodes = OBDD_Build.create f in
@@ -70,6 +70,7 @@ let make_robdd_sifting f =
       int_node = IntHash.create n and
       robdd_int = RobddHash.create n
   in
+  let required_index = IntHash.create n in
   
   (* give an adress in memory for every node *)
   let rec index_node list c = match list with
@@ -126,7 +127,7 @@ let make_robdd_sifting f =
       | Node_s(i, _, _) -> LitHash.replace lvlTable i [x]; (* create the list *)
 	let vi = match i with Var(vi)->vi in
 	IntHash.replace lvlLitTable vi i; (* the ith lit is at level i in the dag *)
-		
+	
       |  LeafFalse_s | LeafTrue_s -> match LitHash.mem lvlTable v0 with
 	| false -> LitHash.replace lvlTable v0 [x]
 	| true -> LitHash.replace lvlTable v0 (x::(LitHash.find lvlTable v0))
@@ -143,69 +144,63 @@ let make_robdd_sifting f =
 (* Indicate if a node is present in the robdd_sifting *)
 let registered_node sift node = TreeHash.mem sift.node_int node;;
 
-(* Remove a node in the robdd_sifting *)
+(* Remove a node in the robdd_sifting (not freed !)*)
 let remove_node sift node =
-  sift.size <- (sift.size - 1);
   let v0 = Var(0) in
   let index = TreeHash.find sift.node_int node in
-  TreeHash.remove sift.node_int node;
-  IntHash.remove sift.int_node index;
+  TreeHash.remove sift.node_int node; (* remove from the memory *)
+  IntHash.remove sift.int_node index; (* here, the index is unused but not avaible*)
   let rec del_list l n = match l with
     | [] -> []
     | x::q when x=n -> del_list q n
     | x::q -> x::(del_list q n) in
-  match node with
+  match node with (* remove from the lvlTable *)
   | LeafTrue_s | LeafFalse_s ->
      LitHash.replace sift.lvlTable v0 (del_list (LitHash.find sift.lvlTable v0) node)
   | Node_s(x, _, _) ->
      LitHash.replace sift.lvlTable x (del_list (LitHash.find sift.lvlTable x) node)
-
-
+       
 (* Free the memory for the node *)
 let free_node sift node =
   if not (TreeHash.mem sift.node_int node) then ()
-  else
-  let index = TreeHash.find sift.node_int node in
-  sift.avaible_index <- index::sift.avaible_index;
-  remove_node sift node
-  ;;
+  else (
+    sift.size <- sift.size-1; (* the size of the sift is decreased *)
+    let index = TreeHash.find sift.node_int node in
+    sift.avaible_index <- index::sift.avaible_index; (*a new index is avaible*)
+    remove_node sift node);; (* now we remove the node*)
 
 let updateIndex sift index node =
-  let oldNode = IntHash.find sift.int_node index in
+  let oldNode = IntHash.find sift.int_node index in (* the old node is removed *)
   remove_node sift oldNode;
-  IntHash.replace sift.int_node index node;
+  IntHash.replace sift.int_node index node; (* the new node is added*)
   TreeHash.replace sift.node_int node index;
-  if node = LeafFalse_s or node = LeafTrue_s then
-    ()
-  else
-    let v = match node with
-      | Node_s(x, _, _) -> x
-      | _ -> failwith "Updating a with a Leaf"
-    in
-    LitHash.replace sift.lvlTable v (node::(LitHash.find sift.lvlTable v));
-  ;;
+  match node with (* now the new node is added to the lvlTable *)
+  | Node_s(x, _, _) -> LitHash.replace sift.lvlTable x (node::(LitHash.find sift.lvlTable x))
+  | _ -> () (* no interest to add a Leaf *)
+;;
 
+(* add a node if it is not already present, and return its index *)
 let add_node_if_not_present sift node =
   if registered_node sift node then
-    TreeHash.find sift.node_int node
+    TreeHash.find sift.node_int node 
   else begin
     sift.size <- (sift.size + 1);
     match node with
-    | LeafFalse_s | LeafTrue_s -> failwith "Adding a Leaf"
-    | Node_s(v, i, j) -> 
+    | LeafFalse_s | LeafTrue_s -> failwith "Adding a Leaf" (* no interest in adding a Leaf *)
+    | Node_s(v, i, j) -> (* add the node to the lvlTable *)
        if LitHash.mem sift.lvlTable v then
 	 LitHash.replace sift.lvlTable v (node::(LitHash.find sift.lvlTable v))
        else
 	 LitHash.replace sift.lvlTable v [node];
-      
+      (* add the node in memory *)
       match sift.avaible_index with
-      | [] ->
+      | [] -> (* the memory is full*)
 	 let index = sift.mem_offset in
-	 sift.mem_offset <- index+1;
+	 sift.mem_offset <- sift.mem_offset+1; (* we increase the offset*)
 	 IntHash.replace sift.int_node index node;
 	 TreeHash.replace sift.node_int node index;
 	 index
-      | index::q ->
+      | index::q -> (* there are freed cases in memory*)
 	 sift.avaible_index <- q;
 	IntHash.replace sift.int_node index node;
 	TreeHash.replace sift.node_int node index;
