@@ -24,15 +24,19 @@ let swap sift i =
     | Node_s(vi, indexFg, indexFd) ->
        (* the two n+1 index high *)
        let f11Index, f10Index = match IntHash.find sift.int_node indexFd with
-	 | LeafTrue_s | LeafFalse_s -> indexFd, indexFd
+	 | LeafTrue_s | LeafFalse_s ->  indexFd, indexFd
 	 | Node_s(x, _, _) when x <> vip1 -> indexFd, indexFd
-	 | Node_s(_, low, high) -> high, low
+	 | Node_s(_, low, high) ->
+	    node_to_free := (IntHash.find sift.int_node indexFd)::!node_to_free;
+	   high, low
        in
        (* the two n+1 index low *)
        let f01Index, f00Index = match IntHash.find sift.int_node indexFg with
 	 | LeafTrue_s | LeafFalse_s -> indexFg, indexFg
 	 | Node_s(x, _, _) when x <> vip1 -> indexFg, indexFg
-	 | Node_s(_, low, high) -> high, low
+	 | Node_s(_, low, high) ->
+	    node_to_free := (IntHash.find sift.int_node indexFg)::!node_to_free;
+	   high, low
        in
        let highIndex =
 	 if f11Index = f01Index then
@@ -51,11 +55,10 @@ let swap sift i =
 
        let newNode = if (lowIndex = highIndex) then
 	   IntHash.find sift.int_node lowIndex
-	 else
-	   Node_s(vip1, lowIndex, highIndex) in
+	 else(
+	   Printf.printf "Creating Node(%d, %d, %d) -> %d\n" (i+1) lowIndex highIndex actualIndex;
+	   Node_s(vip1, lowIndex, highIndex)) in
        updateIndex sift actualIndex newNode;
-       node_to_free :=
-	 (IntHash.find sift.int_node indexFg)::(IntHash.find sift.int_node indexFd)::!node_to_free;
   in
 
   let rec aux l = match l with
@@ -65,10 +68,14 @@ let swap sift i =
   aux listeNoeuds;
   let rec free_mem list = match list with
     | [] -> ()
+    | LeafFalse_s::q -> free_mem q
+    | LeafTrue_s::q -> free_mem q
     | x::q when List.mem x !node_not_to_free -> free_mem q;
-    | x::q -> free_node sift x; free_mem q;
+    | x::q -> let a, b, c = match x with Node_s(Var(a), b, c) -> a, b, c | _ -> 0, 0, 0 in
+	      Printf.printf "Remove Node(%d, %d, %d) -> %d\n" a b c (TreeHash.find sift.node_int x);
+	      free_node sift x; free_mem q;
   in
-  free_mem !node_to_free;
+free_mem !node_to_free;
 ;;
 
 let sifting sift =
