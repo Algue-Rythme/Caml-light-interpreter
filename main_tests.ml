@@ -1,20 +1,14 @@
 open Tests
 open Printf
 
-let _ =
-  try
-    let name = Sys.argv.(1) in
-    let n = int_of_string Sys.argv.(2) in
-    match name with
-    | "-parity" -> gen_parity n
-    | "-rotations" -> gen_rotations n
-    | "-pigeonhole" -> gen_pigeonhole n
-    | _ -> raise (Invalid_argument("Unknown option"))
-  with
-  | Invalid_argument(s) ->
-    begin
-      printf "%s\n" s;
-      printf "usage: ./generate -<test> n\n";
-      printf "Available -<test> are -parity -rotations -pigeonhole\n"
-    end
-;;
+(* just emulate the parsing of command line *)
+
+let usage_msg = "Just pass an option followed by an integer :";;
+
+let options_list = [
+  ("-parity", Arg.Int (gen_parity), "produce a formula satisfiable only with an odd number of literals set to true");
+  ("-rotation", Arg.Int (gen_rotations), "something of the form 1 => 2 => 3 => ... => (n-1) => n => 1");
+  ("-pigeonhole", Arg.Int (gen_pigeonhole), "print the formula of pigeonhole principle according to the example given")
+];;
+
+let _ = Arg.parse options_list print_endline usage_msg;;

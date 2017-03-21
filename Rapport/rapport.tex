@@ -6,7 +6,6 @@
 \title{Rapport projet 2}
 \author{Joël Felderhoff, Louis Bethune}
 
-
 \begin{document}
 
 \pretitle{%
@@ -18,41 +17,154 @@
 \posttitle{\end{center}}
 \maketitle
 
+\section{Comment utiliser ce programme}
+
+\subsection{Compiler}
+
+Tapez simplement "Make" et vous compilerez automatique deux programmes : "f2bdd" qui était le programme demandé, et "generate" qui sert à générer automatiquement des fichiers test.  
+
+\subsection{Le script ./exec.sh}
+
+Tapez "./exec.sh" suivi de la liste des options.
+Voici les options disponibles :
+
+\begin{itemize}
+\item "-nosift" : par défaut le sifting est présent, toutefois en cas de bug (il ne devrait plus y en avoir mais restons prudents) cela peut être utile de créer le ROBDD sans sifting, c'est à ça que sert cette option !
+\item "-tseitin" : affiche la transformation de tseitin dans out/tseitin.cnf au format DIMAC
+\item "-minisat" : comme "-tseitin", mais en plus appelle minisat sur out/tseitin.cnf et renvoit Arg si non satisfiable, ou une liste d'affectation pour chaque litéral si la CND est satisfiable, et un message d'erreur si jamais un bug est détecté (incompatibilité entre le ROBDD et minisat)
+\item "nomDeFichier" : lit l'entrée dans un fichier nommé nomDeFichier. Si aucun fichier n'est précisé, alors par défaut le programme attend qu'on tape une expression sur l'entrée standard en mode interactif.
+\end{itemize}
+
+Ce script réalise les actions suivantes :
+
+\begin{itemize}
+\item appelle make et compile les deux exécutables
+\item appelle f2bdd avec la liste des options considérées
+\item appelle dot sur les fichiers .dot produits par f2bdd et génère des pdfs
+\item appelle le lecteur de pdf "evince" pour afficher les pdfs produits. evince est disponible sous beaucoup de distribution Linux sous le nom trompeur de "Visionneur de documents"
+\end{itemize}
+
+Ce script peut très bien ne pas pas fonctionner sous les environnements ne possédant pas les programmes sus-nommés.
+
+Vous pouvons donc utiliser simplement "./f2bdd".
+
+\subsection{Le programme ./f2bdd}
+
+A utiliser si le script ne fonctionne pas.
+
+Il affiche sur la sortie standard les informations suivantes :
+
+\begin{itemize}
+\item La formule parsée sous une forme identique à celle des constructeurs de l'objet
+\item La taille du ROBDD avant et après sifting, le cas échéant
+\item La sortie de minisat le cas échéant (avec toutes les informations utiles)
+\item La liste des valuations fournies par minisat
+\item Un message précisant que minisat et le ROBDD sont d'accord (le cas échéant)
+\end{itemize}
+
+Il crée les fichiers suivants dans le dossier out/ :
+
+\begin{itemize}
+\item Formula.dot qui est l'arbre de la formule au format .dot
+\item ROBDD.dot le ROBDD au format .dot
+\item tseitin.cnf une CNF au format DIMAC si -tseitin est activé
+\item sat.txt la valuation de minisat
+\end{itemize}
+
+Que vous pouvez alors lire/traiter manuellement.
+
 \section{Notes concernant le typage}
-Un choix de conception a été fait concernant le typage des variables. Le choix est le suivant : la sémantique l'emporte toujours.
+Un choix de conception a été fait concernant le typage des variables. Le choix est le suivant : la sémantique l'emporte toujours sur le syntaxique.
+
 Typiquement, les littéraux sont représenté par un type précis : \textbf{Var(x)} à la place de juste utiliser des entiers.
 
-Ce choix induit une certaine lourdeur à la programmation mais est justifié par le fait que un typage marqué diminue de manière importante les erreurs de programmation : 
-il n'y aurait aucun intéret à additionner deux littéraux par exemple, c'est donc rendu impossible.
+Ce choix induit une certaine lourdeur à la programmation mais est justifié par le fait qu'un typage marqué diminue de manière importante les erreurs de programmation : 
+il n'y aurait aucun sens d'additionner deux littéraux par exemple, c'est donc rendu impossible.
 
 \section{Le type ROBDD}
 Réalisé conjointement par Louis Bethune et Joël Felderhoff
 
 Ce type est un type d'arbre tout ce qui a de plus classique. Le partage est fait grâce à un foncteur prenant en paramètre un type de dictionnaire.
-J'ai (Joël) réalisé le dictionnaire utilisant des tables de hachages sur les littéraux, contenant la liste des noeuds dépendant de chaque littéraux.
 
-Nous avons donc une complexité en O(nombre de noeuds pour un littéral donné).
+J'ai (Joël) réalisé le dictionnaire utilisant des tables de hachages sur les littéraux, contenant la liste des noeuds dépendant de chaque littéraux. 
+Nous avons donc une complexité en $\mathcal{O}(a)$ où $a$ est le nombre de noeuds affecté à un litéral donné pour le dictionnaire.
 
+J'ai (Louis) factorisé la première implémentation à base de listes (moins efficace) en $\mathcal{O}(n)$.
 Une amélioration pourrait être réalisée en hachant directement les noeuds (par exemple avec une fonction standard de OCaml).
 
-\section{Benchmark}
-Réalisé par Joël Felderhoff.
+La complexité de la création du ROBDD est en $\mathcal{O}(2^n)$ avec $n$ le nombre de littéraux.
 
-J'ai réalisé un petit script python générant une formule aléatoire et faisant, à l'aide d'une boucle, des moyennes des temps d'exécutions.
+\section{Transformation de Tseitin}
+Réalisé par Louis dans tseitin.ml.
 
-Le graphique suivant a été réalisé avec matplotlib, et représente le temps d'exécution moyen (sur 50 tests) en seconde de l'exécution du programme (création de la robdd et sifting) en fonction du nombre de
-connecteurs logiques dans le programme (on a $x$ littéraux pour $4x$ connecteurs logiques).
+J'ai choisi de typer fortement la CNF. Cela a pour conséquence la nécessité de créer quelques fonctions supplémentaires pour manipuler ce type compliqué.
+J'ai implémenté la transformation de façon ordinaire, en rajoutant une nouvelle variable vraie si et seulement si l'expression est vraie, pour chaque expression, récursivement dans l'arbre de la formule.
+Il faut comprendre fAnd comme un $\wedge$ et fOr comme un $\vee$. 
 
-\begin{center}
-\includegraphics[width=450pt]{benchmark.png}
-\end{center}
+\section{Interaction avec Minisat}
+Réalisé par Louis dans minisat.ml.
+
+On appelle simplement minisat comme dans les exemples du cours. On parse ensuite sa sortie à la main, à coup de scanf. On aurait très bien pu réutiliser un second Parser, 
+mais ç'aurait été excessivement compliqué compte tenu de la simplicité du format de la sortie de minisat.  
+  
+On vérifie que la formule est bien satisfiable, et que cela est compatible avec le ROBDD (càd qu'en suivant le chemin correspondant à la valuation de minisat on aboutit sur la feuille LeafTrue). 
+Sinon on agonise (pas satisfiable).
+
+\section{Lecture de la ligne de commande}
+Réalisé par Louis dans main.ml.
+
+On utilise simplement la librairie standard pour parser les différentes options, on set les bons flags, puis on les utilise pour calculer ce qui doit l'être. 
+C'est essentiellement le résultat d'un travail sur l'architecture et l'organisation du code source qui rend tout ça possible sans trop de difficultés.
+
+\section{Afficher les .dot et sur la sortie standard}
+Réalisé par Louis et Joël dans print\_formula.ml.
+
+Pas grand chose à en dire, les fonctions parlent d'elle même.
+
+Notons que lorsqu'on affiche l'arbre correspondant à l'expression parsée, l'opérateur $\Rightarrow$ est le seul opérateur non symétrique de notre langage. 
+Alors j'utilise des flèches en pointillés pour pour voir distinguer "A $\Rightarrow$ B" de "B $\Rightarrow$ A" dans l'arbre : les pointillés vont de A vers B, tout deux fils d'un noeud "$\Rightarrow$". 
+Afficher l'arbre d'une expression comportant "$\Rightarrow$" pour visualiser tout ça.
+
+Notons une fois encore que le typage fort de CNF oblige à un peu de gymnastique mais permet de programmer avec un niveau d'abstraction assez élevé.
+
+\section{Le parsing et les expressions}
+Réalisé par Louis dans expr.ml, parser.mly, lexer.mll. Des contributions de Joël dans expr.ml.
+
+Ces fichiers définissent le type pour représenter une formule logique, et la lire (sans conflit shift ou reduce !).
+On retrouve les opérateurs habituel, des littéraux, mais aussi des constantes booléennes.
+
+On a quelques utilitaires comme récupérer la listes des littéraux (sans doublon !), remplacer un litéral par une constante. Ou même renommer des littéraux. 
+
+On a aussi une fonction qui remplace un ensemble de littéraux par des constantes. Elle est sous optimisée en $\mathcal{O}(n^2)$ car elle redescend dans l'arbre pour remplacer chaque variable par une constante, 
+alors qu'on pourrait ne faire qu'une seule passe et remplacer directement toue les variable d'un coup en $\mathcal{O}(n)$. 
+On pourrait utiliser cette version optimisée pour améliorer les performances de l'implémentation actuelle du ROBDD sur les grosses formules.
+
+On a également une fonction pour évaluer une formule.
+
+\section{Le générateur de tests en OCaml}
+Réalisé par Louis dans main\_tests.ml et tests.ml.
+
+Un programme très simple pour générer automatiquement des tests.
+Pour l'utiliser une il suffit de faire "./generate -parity 5" par exemple. Cela génère dans le fichier parity.form une formule paramétrée 5 qui n'est vraie que si un nombre pair d'arguments sont égaux à 1.
+
+Les options "-pigeonhole" et "-rotation" sont également disponibles, et produisent une sortie dans les fichiers pigeonhole.form ou rotation.form respectivement. Elles attendent toutes des entiers en paramètre pour contrôler la taille de la formule.
+
+N.B: le principe des tiroirs se traduit par -pigeonhole en anglais.  
+
+On remarque que le temps d'exécution de -pigeonhole croit assez vite, car le nombre de littéraux est un $\mathcal{O}(n^2)$ et le nombre de termes un $\mathcal{O}(n^3)$.  
+  
+Notons que la formule donnée dans l'énoncé du rendu est bien une tautologie (et c'est celle que j'affiche) mais elle ne traduit pas le principe des trous de pigeon : il faudrait préciser $p \neq q$ dans le membre droite de l'implication. Peu importe, au fond, on s'en fiche un peu.
+
+N'hésitez par à taper "./generate --help" pour recevoir un peu d'aide. Cette astuce fonctionne aussi avec f2bdd ou exec.sh.
 
 \section{Le sifting}
 Cette partie a été réalisée par Joël Felderhoff.
 
 Le plus gros problème que j'ai eu concernant le sifting a été de choisir la manière de le représenter en mémoire.
-En effet, deux choix s'offraient à moi : soit utiliser des ``ref de ref'' ou émuler une mémoire directement dans OCaml. Après concertation avec Louis, j'ai choisi
-cette deuxième option pour deux raisons. La première est que cela me posait problème d'utiliser des ref de ref (je trouvais cela assez sale dans l'idée). La deuxième était que cela me
+En effet, deux choix s'offraient à moi : soit utiliser des ``ref de ref'' ou émuler une mémoire directement dans OCaml. Après concertation avec Louis (qui me dit que cela revenait à choisir entre
+la décapitation et la pendaison), j'ai choisi
+cette deuxième option pour deux raisons. La première est que cela me posait problème d'utiliser des ref de ref (je trouvais cela assez sale dans l'idée, quoi qu'un certain M. Bethune puisse dire). 
+La deuxième était que cela me
 paraissais un bon exercice et un bon défi de re-coder une gestion de la mémoire basique en OCaml (et ce fût en effet un bon défi).
 
 \subsection{La structure robdd\_sifting}
@@ -71,8 +183,8 @@ On garde également une table qui associe à chaque ``niveau'' du DAG un littér
 Pour finir, l'index de la racine est conservé, pour la génération finale de l'arbre.
 
 \subsection{Émulation de mémoire}
-On garde toujours une bijection entre les noeuds et les entiers de case mémoire. L'idée est que lorsqu'on libère une case (avec la fonction ``free\_node'') on libère une case, qui est rajoutée à la liste des 
-cases libres, prête à être utilisée quand on créera une nouvelle variable.
+On garde toujours une bijection entre les noeuds et les entiers de case mémoire. L'idée est que lorsqu'on libère une case (avec la fonction ``free\_node'') on libère un index mémoire, 
+qui est rajoutée à la liste des index libres, prête à être utilisée quand on créera une nouvelle variable.
 
 Je garde également dans ma structure le nombre de pointeur vers une certaine case mémoire : cela me permet de libérer un noeud du DAG uniquement lorsqu'il n'est plus pointé par aucun autre
 noeud, comme recommandé dans l'article.
@@ -81,14 +193,35 @@ J'ai écrit différentes fonctions pour gérer la mémoire. Je ne vais pas toute
 case et ``add\_node\_if\_not\_present'', dont le nom parle d'elle même.
 
 \subsection{Le sifting en lui même}
-Le plus gros travail a été sur l'émulation de mémoire en elle même. Le swapping m'a demandé principalement du travail de debug. L'article étudié ne précisais pas tous les cas possibles d'échanges, 
+Le plus gros travail a été sur l'émulation de mémoire en elle même. Le swapping m'a demandé principalement du travail de debug. L'article étudié ne précisait pas tous les cas possibles d'échanges, 
 notamment lorsque les fils d'un noeud ne pointent pas vers le niveau suivant du DAG. Tous ces cas sont gérés, et on libére les noeuds qui ne sont plus utilisés, comme prévu dans l'article.
 
 Une fois ce travail réalisé, le sifting n'est qu'une concaténation de 3 boucles dans 1 autre, cela ne m'a donc pas demandé beaucoup de travail.
 
 \subsection{Résultats}
-Quelques beaux résultats de réductions avec le sifting sont disponibles dans le fichier ``exemples\_sifting.txt''. On remarque une très bonne réduction pour gros exemples.
+Quelques beaux résultats de réductions avec le sifting sont disponibles dans le fichier ``exemples\_sifting.txt''. On remarque une très bonne réduction pour de gros exemples.
+
+Par exemple, on passe pour certaines formule d'un DAG de taille 6000 à un DAG de taille 2000 !
 
 Je n'ai pas pus aller plus loin que 20 variables 150 clauses pour des raisons de temps.
+
+\section{Benchmark}
+Réalisé par Joël Felderhoff.
+
+J'ai réalisé un petit script python générant une formule aléatoire et faisant, à l'aide d'une boucle, des moyennes des temps d'exécutions.
+
+Le graphique suivant a été réalisé avec matplotlib, et représente le temps d'exécution moyen (sur 100 tests) en seconde de l'exécution du programme (création de la robdd et sifting) en fonction du nombre de
+connecteurs logiques dans le programme (on a $x$ littéraux pour $4x$ connecteurs logiques).
+
+\begin{center}
+\includegraphics[width=450pt]{benchmark.png}
+\end{center}
+
+On remarque comme prévu une croissance exponentielle.
+
+\includegraphics{le_partage.jpg}
+
+\section{Note}
+L'intégralité du code est toujours disponible sur le compte GitHub de Louis Bethune : https://github.com/Algue-Rythme/Projet2/
 
 \end{document}          

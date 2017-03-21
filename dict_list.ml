@@ -1,5 +1,6 @@
 open Dictionary;;
 
+(* A trivial implementation of set using a list *)
 module ROBDD_LIST =
 struct
   type dict = robdd list ref
