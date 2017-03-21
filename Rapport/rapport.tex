@@ -35,6 +35,18 @@ Nous avons donc une complexité en O(nombre de noeuds pour un littéral donné).
 
 Une amélioration pourrait être réalisée en hachant directement les noeuds (par exemple avec une fonction standard de OCaml).
 
+\section{Benchmark}
+Réalisé par Joël Felderhoff.
+
+J'ai réalisé un petit script python générant une formule aléatoire et faisant, à l'aide d'une boucle, des moyennes des temps d'exécutions.
+
+Le graphique suivant a été réalisé avec matplotlib, et représente le temps d'exécution moyen (sur 50 tests) en seconde de l'exécution du programme (création de la robdd et sifting) en fonction du nombre de
+connecteurs logiques dans le programme (on a $x$ littéraux pour $4x$ connecteurs logiques).
+
+\begin{center}
+\includegraphics[width=450pt]{benchmark.png}
+\end{center}
+
 \section{Le sifting}
 Cette partie a été réalisée par Joël Felderhoff.
 
@@ -73,5 +85,10 @@ Le plus gros travail a été sur l'émulation de mémoire en elle même. Le swap
 notamment lorsque les fils d'un noeud ne pointent pas vers le niveau suivant du DAG. Tous ces cas sont gérés, et on libére les noeuds qui ne sont plus utilisés, comme prévu dans l'article.
 
 Une fois ce travail réalisé, le sifting n'est qu'une concaténation de 3 boucles dans 1 autre, cela ne m'a donc pas demandé beaucoup de travail.
+
+\subsection{Résultats}
+Quelques beaux résultats de réductions avec le sifting sont disponibles dans le fichier ``exemples\_sifting.txt''. On remarque une très bonne réduction pour gros exemples.
+
+Je n'ai pas pus aller plus loin que 20 variables 150 clauses pour des raisons de temps.
 
 \end{document}          

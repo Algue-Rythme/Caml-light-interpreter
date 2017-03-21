@@ -190,6 +190,7 @@ let free_node sift node =
     sift.avaible_index <- index::sift.avaible_index; (*a new index is avaible*)
     remove_node sift node);; (* now we remove the node*)
 
+(* update an index to replace a node*)
 let updateIndex sift index node =
   let oldNode = IntHash.find sift.int_node index in (* the old node is removed *)
   remove_node sift oldNode;
