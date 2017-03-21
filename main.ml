@@ -18,16 +18,22 @@ let fileDot name = name^".dot"
 let cnf_file = "out/test.cnf"
 
 let input_formula = ref stdin
+let set_input file =
+  let channel = open_in file in
+  input_formula := channel;;
+
 let tseitin_enable = ref false
 let minisat_enable = ref false
-let formula_input = ref stdin
 let active_minisat () =
   tseitin_enable := true;
   minisat_enable := true;;
 
+let sift_enable = ref true
+
 let options_list = [
   ("-tseitin", Arg.Set (tseitin_enable), "translate to SAT format");
-  ("-minisat", Arg.Unit (active_minisat), "translate to SAT format and solve it with minisat")];;
+  ("-minisat", Arg.Unit (active_minisat), "translate to SAT format and solve it with minisat");
+  ("-nosift", Arg.Clear (sift_enable), "Disable sifting")];;
 
 let usage_msg = "Please read rapport.pdf instead of trying weird things. The followings options are enabled :"
 
@@ -41,16 +47,19 @@ let cnf_utilities formula tree =
     end
 ;;
 
+let sift_utilities formula =
+  let sift = make_robdd_sifting formula in
+  Printf.printf "Size before sifting : %d\n" sift.size;
+  sifting sift;
+  Printf.printf "Size after sifting : %d\n" sift.size;
+  sift_to_robdd sift;;
+
 let process f =
   begin
     try
       printPropFormula f;
       prop_to_dot f (fileDot propDot);
-      let sift = make_robdd_sifting f in
-      Printf.printf "Size before sifting : %d\n" sift.size;
-      sifting sift;
-      Printf.printf "Size after sifting : %d\n" sift.size;
-      let tree, nodes = sift_to_robdd sift in
+      let tree, nodes = if !sift_enable then sift_utilities f else OBDD_Build.create f in
       cnf_utilities f tree;
       tree_to_dot nodes (fileDot robddDot);
       print_newline();
@@ -61,14 +70,14 @@ let process f =
   end
 
 let compute () =
-  Arg.parse options_list print_endline usage_msg; (
+  Arg.parse options_list set_input usage_msg; (
     try
-      let lexbuf = Lexing.from_channel (!formula_input) in
+      let lexbuf = Lexing.from_channel (!input_formula) in
       let parse () = Parser.main Lexer.token lexbuf in
       let result = parse () in
       process result; flush stdout
     with
     | s -> print_string "Typo error\n"; raise s);
-  if !input_formula != stdin then close_in (!formula_input);;
+  if !input_formula != stdin then close_in (!input_formula);;
 
 let _ = compute ()
