@@ -16,13 +16,15 @@ module OBDD_Build = ROBDD_BUILDER(ROBDD_LITHASH) (* change here to select the di
 let robddDot = "out/ROBDD"
 let propDot = "out/Formula"
 let fileDot name = name^".dot"
-let cnf_file = "out/test.cnf"
+let cnf_file = "out/tseitin.cnf"
 
 (* some global references and function to manage command line arguments*)
 
 (* change the input : stdin by default *)
 let input_formula = ref stdin
+let is_stdin = ref true
 let set_input file =
+  is_stdin := false;
   let channel = open_in file in
   input_formula := channel;;
 
@@ -57,6 +59,7 @@ let sift_utilities formula =
   Printf.printf "Size before sifting : %d\n" sift.size;
   sifting sift;
   Printf.printf "Size after sifting : %d\n" sift.size;
+  flush stdout;
   sift_to_robdd sift;;
 
 (* logical core of the program *)
@@ -78,12 +81,13 @@ let process formula =
 let compute () =
   Arg.parse options_list set_input usage_msg; (
     try
+      if !is_stdin then (print_string "Interactive mode > "; flush stdout);
       let lexbuf = Lexing.from_channel (!input_formula) in
       let parse () = Parser.main Lexer.token lexbuf in (* use the parser to read input *)
       let result = parse () in
       process result; flush stdout
     with
     | s -> print_string "Typo error\n"; raise s);
-  if !input_formula != stdin then close_in (!input_formula);; (* don't forget to close the channel *)
+  if not (!is_stdin) then close_in (!input_formula);; (* don't forget to close the channel *)
 
 let _ = compute ()

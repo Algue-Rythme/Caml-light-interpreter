@@ -26,18 +26,9 @@ module ROBDD_BUILDER =
             let leaf = if eval formula then LeafTrue else LeafFalse in (* Eval an expression without variables *)
             if Dict.mem tbl leaf then Dict.find tbl leaf else ( Dict.add tbl leaf; leaf ) (*create the leaf if the leaf doesn't exist yet*)
           | lit::q ->
-
-            (* let before = !stack in
-            stack := lit::before;
-            List.iter (fun i -> printf "%d " i) (!stack);
-               printf "\n"; *)
-
             (* Replace the literal *)
             let v0 = build (replace formula lit false) q in
             let v1 = build (replace formula lit true) q in
-
-            (* stack := before; *)
-
             mk lit v0 v1 (* merge the two subtree using sharing *)
         in
         let tree = build f (literalsList f) in
