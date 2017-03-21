@@ -17,7 +17,7 @@ let gen_parity n =
 let gen_rotations n =
   let channel = open_out "out/rotation.form" in
   let printf s = fprintf channel (format_of_string s) in
-  apply_range (fun i -> printf "(%d <=> %d) /\\ " i (i+1)) (fun i -> printf "(%d <=> %d) 0\n" n i) 1 n;
+  apply_range (fun i -> printf "(%d <=> %d) /\\ " i (i+1)) (fun i -> printf "(%d <=> %d) 0\n" n 1) 1 n;
   close_out channel;;
 
 let gen_pigeonhole n =
