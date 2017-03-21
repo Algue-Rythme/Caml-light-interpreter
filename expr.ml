@@ -62,19 +62,16 @@ let rec eval = function
   | Implies(a, b) -> if (eval a) then (eval b) else true
   | Equivalent(a, b) -> (eval a) = (eval b);;
 
+let merge_uniq a b = List.sort_uniq (fun a b -> a-b) (a@b);;
+
 (* returns a ordered list of literals (all positives) *)
 let rec literalsList = function
   | Const(_) -> []
   | Literal(i) -> [abs i]
   | Not(a) -> literalsList a
-  | And(a, b) ->
-     List.merge (fun a b -> a-b) (literalsList a) (literalsList b)
-  | Or(a, b) ->
-     List.merge (fun a b -> a-b) (literalsList a) (literalsList b)
-  | Xor(a, b) ->
-     List.merge (fun a b -> a-b) (literalsList a) (literalsList b)
-  | Implies(a, b) ->
-     List.merge (fun a b -> a-b) (literalsList a) (literalsList b)
-  | Equivalent(a, b) ->
-    List.merge (fun a b -> a-b) (literalsList a) (literalsList b)
+  | And(a, b) -> merge_uniq (literalsList a) (literalsList b)
+  | Or(a, b) -> merge_uniq (literalsList a) (literalsList b)
+  | Xor(a, b) -> merge_uniq (literalsList a) (literalsList b)
+  | Implies(a, b) -> merge_uniq (literalsList a) (literalsList b)
+  | Equivalent(a, b) -> merge_uniq (literalsList a) (literalsList b)
 ;;

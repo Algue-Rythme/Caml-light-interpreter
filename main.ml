@@ -10,7 +10,7 @@ open Sifting
 open Sifting_utils
 open Robdd_to_tree
 
-module OBDD_Build = ROBDD_BUILDER(ROBDD_LIST) (* change here to select the dictionary implementation *)
+module OBDD_Build = ROBDD_BUILDER(ROBDD_LITHASH) (* change here to select the dictionary implementation *)
 
 let robddDot = "out/ROBDD"
 let propDot = "out/Formula"
@@ -62,13 +62,13 @@ let process f =
 
 let compute () =
   Arg.parse options_list print_endline usage_msg; (
-  try
-    let lexbuf = Lexing.from_channel (!formula_input) in
-    let parse () = Parser.main Lexer.token lexbuf in
-    let result = parse () in
-    process result; flush stdout
-  with
-  | s -> print_string "Typo error\n"; raise s);
+    try
+      let lexbuf = Lexing.from_channel (!formula_input) in
+      let parse () = Parser.main Lexer.token lexbuf in
+      let result = parse () in
+      process result; flush stdout
+    with
+    | s -> print_string "Typo error\n"; raise s);
   if !input_formula != stdin then close_in (!formula_input);;
 
 let _ = compute ()

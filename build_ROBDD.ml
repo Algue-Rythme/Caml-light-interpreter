@@ -1,15 +1,17 @@
-open Dictionary;;
-open Expr;;
+open Dictionary
+open Expr
+open Printf
 
 (*
   Functor to create ROBDD with a propFormula,
-  take a dictionary as argument to choose the efficiency of the implementation 
+  take a dictionary as argument to choose the efficiency of the implementation
 *)
 
 module ROBDD_BUILDER =
   functor (Dict : Dictionary) ->
     struct
       let create f =
+        let stack = ref [] in
         let tbl = Dict.create () in
         let mk var low high =
           let node = Node(Var(var), low, high) in
@@ -22,8 +24,17 @@ module ROBDD_BUILDER =
             let leaf = if eval formula then LeafTrue else LeafFalse in
             if Dict.mem tbl leaf then Dict.find tbl leaf else ( Dict.add tbl leaf; leaf )
           | lit::q ->
+
+            (* let before = !stack in
+            stack := lit::before;
+            List.iter (fun i -> printf "%d " i) (!stack);
+            printf "\n"; *)
+
             let v0 = build (replace formula lit false) q in
             let v1 = build (replace formula lit true) q in
+
+            (* stack := before; *)
+
             mk lit v0 v1
         in
         let tree = build f (literalsList f) in
