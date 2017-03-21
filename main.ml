@@ -10,7 +10,7 @@ open Sifting
 open Sifting_utils
 open Robdd_to_tree
 
-module OBDD_Build = ROBDD_BUILDER(ROBDD_LIST) (* change here to select the dictionary implementation *)
+module OBDD_Build = ROBDD_BUILDER(ROBDD_LITHASH) (* change here to select the dictionary implementation *)
 
 let robddDot = "out/ROBDD"
 let propDot = "out/Formula"
@@ -42,20 +42,19 @@ let cnf_utilities formula tree =
 ;;
 
 let process f =
-  begin
-    try
-      printPropFormula f;
-      prop_to_dot f (fileDot propDot);
-      let sift = make_robdd_sifting f in
-      let tree, nodes = sift_to_robdd sift in
-      cnf_utilities f tree;
-      tree_to_dot nodes (fileDot robddDot);
-      print_newline();
-    with
-    | Failure(s) -> print_string "Error : "; print_string s; print_newline ();
-    | Not_found -> print_string "Not found\n";
-    | s -> print_string "Unknown error\n"; raise s
-  end
+  try
+    printPropFormula f;
+    prop_to_dot f (fileDot propDot);
+    (* let sift = make_robdd_sifting f in *)
+    (* let tree, nodes = sift_to_robdd sift in *)
+    let tree, nodes = OBDD_Build.create f in
+    cnf_utilities f tree;
+    tree_to_dot nodes (fileDot robddDot);
+    print_newline();
+  with
+  | Failure(s) -> print_string "Error : "; print_string s; print_newline ();
+  | Not_found -> print_string "Not found\n";
+  | s -> print_string "Unknown error\n"; raise s
 
 let compute () =
   Arg.parse options_list print_endline usage_msg; (

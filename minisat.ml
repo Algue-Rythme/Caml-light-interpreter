@@ -41,8 +41,6 @@ let check_robdd valuation robdd =
   in visit robdd;;
 
 let comp_cnf_robdd cnf_file formula robdd =
-  let cnf = to_cnf formula in
-  printCNF cnf cnf_file;
   call_minisat cnf_file sat_file;
   try
     let valuation = check_minisat sat_file in
@@ -54,6 +52,6 @@ let comp_cnf_robdd cnf_file formula robdd =
       print_string "ROBDD and CNF match !\n"
   with
   | ROBDD_CNF_Incompatibility ->
-    print_string "ROBDD and CNF are not compatibles\nCongratulation, you just find a bug !\n"
+    print_string "ROBDD and CNF are not compatibles\nCongratulation, you just found a bug !\n"
   | s -> raise s
 ;;
