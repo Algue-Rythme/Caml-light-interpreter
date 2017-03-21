@@ -23,6 +23,10 @@ let printPropFormula expr =
 open Dictionary;;
 open Printf;;
 
+(*
+print the robdd into dot file
+dotted edges for "false path" and full edges for "true path"
+*)
 let tree_to_dot nodes file =
   let i = ref 0 in
   let indexedNodeList = List.map (fun node -> incr i; (node, !i)) nodes in (* list of all nodes indexed by an int*)
@@ -44,7 +48,10 @@ let tree_to_dot nodes file =
   printf "}\n\n";
   close_out channel;;
 
-(* Print the formula into a dot file *)
+(*
+Print the formula into a dot file
+The => operator is not symetric, so dotted edges are used to show the direction of implication
+*)
 let prop_to_dot formula file =
   let channel = open_out file in
   let printf s = fprintf channel (format_of_string s) in
@@ -77,6 +84,7 @@ let prop_to_dot formula file =
 
 open Tseitin;;
 
+(* a little complicated function just to count the number of literals in CNF, because of hard typing *)
 let nb_var_cnf cnf = List.length (
     List.sort_uniq (fun a b -> (abs a)-(abs b))
       (List.map dezip_literal
@@ -84,6 +92,7 @@ let nb_var_cnf cnf = List.length (
       )
   );;
 
+(* print CNF into the file that goes into minisat input *)
 let printCNF cnf file =
   let channel = open_out file in
   let printf s = fprintf channel (format_of_string s) in
@@ -92,4 +101,3 @@ let printCNF cnf file =
   let printClauses = List.iter (function Clause(lits) -> printClause lits; printf "0\n") in
   printClauses (dezip_cnf cnf);
   close_out channel;;
-

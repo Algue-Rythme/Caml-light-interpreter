@@ -1,6 +1,6 @@
 (* by convention always write code about operators sorted by priority *)
 type propFormula =
-    Const of bool
+    Const of bool (* add boolean constant is usefull for some reasons *)
   | Literal of int
   | Not of propFormula
   | And of propFormula * propFormula
@@ -31,6 +31,7 @@ let replace formula i value =
     | Equivalent(a, b) -> Equivalent(aux a, aux b)
   in aux formula;;
 
+(* replace all occurences of i and -i by j and -j to help some preprocessing options of sifting *)
 let rename_variable formula i j =
   let rec aux form = match form with
     | Const(c) -> Const(c)
@@ -62,6 +63,7 @@ let rec eval = function
   | Implies(a, b) -> if (eval a) then (eval b) else true
   | Equivalent(a, b) -> (eval a) = (eval b);;
 
+(* merge two set and remove doublons O(n log n) *)
 let merge_uniq a b = List.sort_uniq (fun a b -> a-b) (a@b);;
 
 (* returns a ordered list of literals (all positives) *)
