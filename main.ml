@@ -47,6 +47,9 @@ let process f =
       printPropFormula f;
       prop_to_dot f (fileDot propDot);
       let sift = make_robdd_sifting f in
+      Printf.printf "Size before sifting : %d\n" sift.size;
+      sifting sift;
+      Printf.printf "Size after sifting : %d\n" sift.size;
       let tree, nodes = sift_to_robdd sift in
       cnf_utilities f tree;
       tree_to_dot nodes (fileDot robddDot);
