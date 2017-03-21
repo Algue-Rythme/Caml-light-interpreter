@@ -110,7 +110,7 @@ let make_robdd_sifting f =
 	 if not(IntHash.mem number_link_to d) then
 	   IntHash.replace number_link_to d 1
 	 else
-	   IntHash.replace number_link_to d ((IntHash.find number_link_to g)+1);
+	   IntHash.replace number_link_to d ((IntHash.find number_link_to d)+1);
 	 
 	 let node =
 	   if not(LitHash.mem nameLit (Var(v)) ) then (

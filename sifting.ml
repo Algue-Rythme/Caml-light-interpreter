@@ -33,7 +33,7 @@ let swap sift i =
        let f01Index, f00Index = match IntHash.find sift.int_node indexFg with
 	 | LeafTrue_s | LeafFalse_s -> indexFg, indexFg
 	 | Node_s(x, _, _) when x <> vip1 -> indexFg, indexFg
-	 | Node_s(_, low, high) ->
+	 | Node_s(_, low, high) -> 
 	    node_to_free := (IntHash.find sift.int_node indexFg)::!node_to_free;
 	   high, low
        in
@@ -64,6 +64,7 @@ let swap sift i =
     | x::q -> swap_node x; aux q;
   in
   aux listeNoeuds;
+  
   let rec free_mem list = match list with
     | [] -> ()
     | LeafFalse_s::q -> free_mem q
